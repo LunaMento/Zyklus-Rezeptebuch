@@ -53,7 +53,8 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
       return;
     }
 
-    setMessages((prev) => [...prev, { role: "assistant", content: data.reply, recipe: data.recipe || null }]);
+    const reply = data.reply || (data.recipe ? "Hier ist ein Vorschlag für dich:" : "");
+    setMessages((prev) => [...prev, { role: "assistant", content: reply, recipe: data.recipe || null }]);
   };
 
   const handleSave = async (recipe, index, category) => {
@@ -74,6 +75,15 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
   const formatAmount = (n) => {
     if (!n) return "";
     return String(n).replace(".", ",");
+  };
+
+  // Übersetzt einfaches **fett** aus der Agent-Antwort in echtes <strong>,
+  // damit im Chat kein rohes Markdown angezeigt wird.
+  const renderFormatted = (text) => {
+    return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+      const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
+      return boldMatch ? <strong key={i}>{boldMatch[1]}</strong> : <React.Fragment key={i}>{part}</React.Fragment>;
+    });
   };
 
   return (
@@ -136,7 +146,7 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
                     : { background: "#3d472b", color: "#ccdbb2" }
                 }
               >
-                {m.content}
+                {renderFormatted(m.content)}
               </div>
 
               {m.recipe && (
