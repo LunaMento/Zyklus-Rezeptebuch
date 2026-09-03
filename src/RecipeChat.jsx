@@ -1,6 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronDown, ChevronUp, Sparkles, Send, Save, ShoppingCart, Check } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "./supabaseClient";
+
+function getMarkdownComponents(role) {
+  const headingColor = role === "user" ? "#272e1b" : "#ebddc5";
+  return {
+    p: (props) => <p className="mb-2 last:mb-0" {...props} />,
+    strong: (props) => <strong style={{ color: headingColor }} {...props} />,
+    ul: (props) => <ul className="list-disc ml-5 mb-2 space-y-1" {...props} />,
+    ol: (props) => <ol className="list-decimal ml-5 mb-2 space-y-1" {...props} />,
+    li: (props) => <li {...props} />,
+    h1: (props) => <h1 className="serif text-lg mt-1 mb-1" style={{ color: headingColor }} {...props} />,
+    h2: (props) => <h2 className="serif text-base mt-1 mb-1" style={{ color: headingColor }} {...props} />,
+    h3: (props) => <h3 className="font-medium mt-1 mb-1" style={{ color: headingColor }} {...props} />,
+    a: (props) => <a style={{ color: role === "user" ? "#272e1b" : "#bfb2da", textDecoration: "underline" }} target="_blank" rel="noreferrer" {...props} />,
+  };
+}
 
 const EXAMPLE_PROMPTS = [
   "Ich hab Quinoa, Zucchini und Eier da — was kann ich machen?",
@@ -77,15 +93,6 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
     return String(n).replace(".", ",");
   };
 
-  // Übersetzt einfaches **fett** aus der Agent-Antwort in echtes <strong>,
-  // damit im Chat kein rohes Markdown angezeigt wird.
-  const renderFormatted = (text) => {
-    return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
-      const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
-      return boldMatch ? <strong key={i}>{boldMatch[1]}</strong> : <React.Fragment key={i}>{part}</React.Fragment>;
-    });
-  };
-
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col" style={{ minHeight: "100vh" }}>
       <button
@@ -139,14 +146,14 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className="max-w-[85%]">
               <div
-                className="px-4 py-3 rounded-sm text-sm leading-relaxed whitespace-pre-wrap"
+                className="px-4 py-3 rounded-sm text-sm leading-relaxed"
                 style={
                   m.role === "user"
                     ? { background: "#bfb2da", color: "#272e1b" }
                     : { background: "#3d472b", color: "#ccdbb2" }
                 }
               >
-                {renderFormatted(m.content)}
+                <ReactMarkdown components={getMarkdownComponents(m.role)}>{m.content}</ReactMarkdown>
               </div>
 
               {m.recipe && (
