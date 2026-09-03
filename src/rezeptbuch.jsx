@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Minus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Save, RotateCcw, BookOpen, ShoppingCart, Share2, Check, XCircle, LogOut, Calendar } from "lucide-react";
+import { Plus, Minus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Save, RotateCcw, BookOpen, ShoppingCart, Share2, Check, XCircle, LogOut, Calendar, Sparkles } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import { getAverageCycleLength, getCurrentCycleDay, getPhaseForDay, getPredictedNextPeriod, toISODateString } from "./cycleUtils";
+import RecipeChat from "./RecipeChat";
 
 const phases = [
   {
@@ -91,6 +92,7 @@ export default function Rezeptbuch({ session }) {
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [addedToList, setAddedToList] = useState(false);
   const [showTracker, setShowTracker] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [cycleEntries, setCycleEntries] = useState([]);
   const [cycleLoading, setCycleLoading] = useState(true);
 
@@ -182,6 +184,25 @@ export default function Rezeptbuch({ session }) {
 
   const selected = recipes.find((r) => r.id === selectedId);
   const currentPhase = phases.find((p) => p.id === activePhase);
+
+  const chatPhaseId = hasCycleData ? autoPhaseId : activePhase || phases[0].id;
+  const chatPhase = phases.find((p) => p.id === chatPhaseId) || phases[0];
+  const chatCycleDay = hasCycleData ? currentCycleDay : null;
+
+  const saveChatRecipe = async (recipe, category) => {
+    const cleaned = {
+      ...recipe,
+      id: "ai-" + Date.now(),
+      category,
+      tags: Array.isArray(recipe.tags) ? recipe.tags.filter(Boolean) : [],
+    };
+    await addToDb(cleaned);
+    setRecipes((prev) => [...prev, cleaned]);
+  };
+
+  const addChatRecipeToShoppingList = async (recipe) => {
+    await addToShoppingList(recipe, recipe.baseServings);
+  };
 
   const openRecipe = (r) => {
     setSelectedId(r.id);
@@ -381,6 +402,23 @@ const clearAllItems = async () => {
     );
   }
 
+  if (showChat) {
+    return (
+      <div className="min-h-screen" style={{ background: "#272e1b", ...fontStyle }}>
+        <style>{globalStyles}</style>
+        <RecipeChat
+          phase={chatPhase.id}
+          phaseName={chatPhase.name}
+          cycleDay={chatCycleDay}
+          histamineSafe={chatPhase.histamineSafe}
+          onClose={() => setShowChat(false)}
+          onSaveRecipe={saveChatRecipe}
+          onAddToShoppingList={addChatRecipeToShoppingList}
+        />
+      </div>
+    );
+  }
+
   if (!activePhase && !selected) {
     return (
       <div className="min-h-screen" style={{ background: "#272e1b", ...fontStyle }}>
@@ -403,6 +441,14 @@ const clearAllItems = async () => {
                 </p>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => setShowChat(true)}
+                  title="Rezept-Assistent"
+                  className="p-3 rounded-full"
+                  style={{ border: "1px solid #bfb2da", color: "#bfb2da", background: "transparent" }}
+                >
+                  <Sparkles size={16} />
+                </button>
                 <button
                   onClick={() => setShowTracker(true)}
                   title="Zyklustracker"
@@ -563,6 +609,14 @@ const clearAllItems = async () => {
                 </p>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => setShowChat(true)}
+                  title="Rezept-Assistent"
+                  className="p-3 rounded-full"
+                  style={{ border: "1px solid #bfb2da", color: "#bfb2da", background: "transparent" }}
+                >
+                  <Sparkles size={16} />
+                </button>
                 <button
                   onClick={openShoppingList}
                   title="Einkaufsliste"
