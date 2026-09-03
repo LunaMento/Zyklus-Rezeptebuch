@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Sparkles, Send, Save, ShoppingCart, Check } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Sparkles, Send, Save, ShoppingCart, Check } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
 const EXAMPLE_PROMPTS = [
@@ -17,6 +17,7 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [savingIndex, setSavingIndex] = useState(null);
+  const [expandedIndices, setExpandedIndices] = useState({});
   const [savedIndices, setSavedIndices] = useState({});
   const [addedIndices, setAddedIndices] = useState({});
   const scrollRef = useRef(null);
@@ -64,6 +65,15 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
   const handleAddToShoppingList = async (recipe, index) => {
     await onAddToShoppingList(recipe);
     setAddedIndices((prev) => ({ ...prev, [index]: true }));
+  };
+
+  const toggleExpanded = (index) => {
+    setExpandedIndices((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const formatAmount = (n) => {
+    if (!n) return "";
+    return String(n).replace(".", ",");
   };
 
   return (
@@ -137,6 +147,51 @@ export default function RecipeChat({ phase, phaseName, cycleDay, histamineSafe, 
                   <p className="text-xs mb-3" style={{ color: "#aebf92" }}>
                     {m.recipe.benefits}
                   </p>
+
+                  <button
+                    onClick={() => toggleExpanded(i)}
+                    className="flex items-center gap-1.5 mb-3 text-xs"
+                    style={{ color: "#bfb2da" }}
+                  >
+                    {expandedIndices[i] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {expandedIndices[i] ? "Weniger anzeigen" : "Rezept ansehen"}
+                  </button>
+
+                  {expandedIndices[i] && (
+                    <div className="mb-4 pb-4 border-b" style={{ borderColor: "#ebddc520" }}>
+                      <div className="text-[11px] tracking-[0.2em] uppercase mb-2" style={{ color: "#aebf92" }}>
+                        Zutaten ({m.recipe.baseServings} {m.recipe.baseServings === 1 ? "Portion" : "Portionen"})
+                      </div>
+                      <ul className="mb-4 space-y-1">
+                        {(m.recipe.ingredients || []).map((ing, idx) => (
+                          <li key={idx} className="text-[15px] leading-[1.4]" style={{ color: "#ccdbb2" }}>
+                            <span className="tabular-nums" style={{ color: "#ebddc5" }}>
+                              {formatAmount(ing.amount)} {ing.unit}
+                            </span>{" "}
+                            {ing.name}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="text-[11px] tracking-[0.2em] uppercase mb-2" style={{ color: "#aebf92" }}>
+                        Zubereitung
+                      </div>
+                      <ol className="space-y-2">
+                        {(m.recipe.steps || []).map((step, idx) => (
+                          <li key={idx} className="flex gap-2 text-[15px] leading-[1.4]" style={{ color: "#ccdbb2" }}>
+                            <span style={{ color: "#ebddc5" }}>{idx + 1}.</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+
+                      {m.recipe.notes && (
+                        <p className="mt-4 text-xs leading-relaxed" style={{ color: "#aebf92" }}>
+                          {m.recipe.notes}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {savedIndices[i] ? (
                     <div className="flex items-center gap-2 text-xs" style={{ color: "#9cb37c" }}>
